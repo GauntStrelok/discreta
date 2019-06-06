@@ -1,0 +1,22 @@
+{
+  "things": [
+    {
+      "title":"Un titulo azul",
+      "author":"Carlos",
+      "imgSrc":"https://developer.mozilla.org/static/img/web-docs-sprite.22a6a085cf14.svg",
+      "alt":"AZUL"
+    },
+    {
+      "title":"Un titulo violeta",
+      "author":"Juan",
+      "imgSrc":"https://developer.mozilla.org/static/img/web-docs-sprite.22a6a085cf4.svg",
+      "alt":"VIOLETA"
+    },
+    {
+      "title":"Un titulo NARANJA",
+      "author":"Oscar",
+      "imgSrc":"https://developer.mozilla.org/static/img/web-docs-sprte.22a6a085cf14.svg",
+      "alt":"NARANJA"
+    }
+  ]
+}
