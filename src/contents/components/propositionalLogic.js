@@ -2,7 +2,11 @@ import React, {
   Component
 } from "react";
 
+const trueCode = "T";
+const falseCode = "F";
+
 class PropositionalLogic extends Component {
+
   constructor(props) {
     super(props);
     // this.state = {
@@ -16,6 +20,7 @@ class PropositionalLogic extends Component {
     this.addOperation = this.addOperation.bind(this);
     this.resolve = this.resolve.bind(this);
     this.resolveExpression = this.resolveExpression.bind(this);
+    this.calculateTruthTable = this.calculateTruthTable.bind(this);
 
   }
 
@@ -103,20 +108,14 @@ class PropositionalLogic extends Component {
   }
 
   resolve(value, variablesMap) {
-    variablesMap = {
-      "A": true,
-      "B": false
-    }
-    variablesMap.T = true;
-    variablesMap.F = false;
-    let trueValue = "T";
-    let falseValue = "F";
+    variablesMap[trueCode] = true;
+    variablesMap[falseCode] = false;
     let pila = [];
     let currentStack = [];
     let parenthesisStack = [];
     let lastChar = "";
     let parenthesisCounter = 0;
-    let isVariable = (c) => this.state.variables.includes(c)
+    let isVariable = (c) => this.state.variables.includes(c) || c === trueCode || c === falseCode
     for (const c of value) {
       if (c === " ") continue;
 
@@ -141,9 +140,10 @@ class PropositionalLogic extends Component {
         //estamos en un caso extremo
         //en todo esto hay que revisar cosas como que lo anterior no sea tambien una variable por ejemplo
         let result = this.resolve(parenthesisStack, variablesMap);
-        if (result !== true || result !== false) return result;
-        currentStack.push(result ? "T" : "F");
-        lastChar = result ? "T" : "F";
+        parenthesisStack = [];
+        if (result !== true && result !== false) return result;
+        currentStack.push(result ? trueCode : falseCode);
+        lastChar = result ? trueCode : falseCode;
         continue;
       } else if (parenthesisCounter) {
         parenthesisStack.push(c);
@@ -198,6 +198,11 @@ class PropositionalLogic extends Component {
         lastChar = c;
       }
     }
+    if(currentStack.length) {
+      pila.push(currentStack);
+      currentStack = [];
+    }
+
     if(pila[0][0] === "-") {
       return this.resolveOperation(variablesMap[pila[0][1]], false, "-");
     }
@@ -205,6 +210,18 @@ class PropositionalLogic extends Component {
     let bool2 = variablesMap[pila[0][2]];
     return this.resolveOperation(bool1, bool2, pila[0][1]);
     //after for
+  }
+
+  calculateTruthTable() {
+    let allCombinations = Math.pow(2, this.state.variables.length);
+    for(var i = 0; i < allCombinations; i++) {
+      let binaryString = i.toString(2);
+      let variablesMap = {};
+      this.state.variables.forEach((variable, index) => {
+        variablesMap[variable] = binaryString[index] === "1";
+      })
+      console.log(this.resolve(this.state.value, variablesMap), variablesMap);
+    }
   }
 
   render() {
@@ -226,7 +243,7 @@ class PropositionalLogic extends Component {
       < button onClick={ this.addOperation }> Agregar < /button>
       < input type="text" onChange={ this.setValue } value={ this.state.value } />
       < span value={ this.state.value }>
-      < button onClick={ this.resolveExpression }> Agregar < /button>
+      < button onClick={ this.calculateTruthTable }> Agregar < /button>
       < /span>
     < /div>
     )
