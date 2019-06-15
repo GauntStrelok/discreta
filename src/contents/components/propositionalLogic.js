@@ -4,23 +4,27 @@ import React, {
 
 const trueCode = "T";
 const falseCode = "F";
+const defaultVariables = ["A", "B"]
+
+const andOperators = ["∧", "^"];
+const orOperators = ["∨"];
+const thenOperators = ["→"];
+const ifOnlyOperators = ["⇔"];
+const notOperators = ["-", "¬"];
+
 
 class PropositionalLogic extends Component {
 
   constructor(props) {
     super(props);
-    // this.state = {
-    //   author: props.author,
-    //   title: props.title
-    // }
     this.addOption = this.addOption.bind(this);
     this.setInputValue = this.setInputValue.bind(this);
     this.setValue = this.setValue.bind(this);
     this.setSelectedOperation = this.setSelectedOperation.bind(this);
     this.addOperation = this.addOperation.bind(this);
     this.resolve = this.resolve.bind(this);
-    this.resolveExpression = this.resolveExpression.bind(this);
     this.calculateTruthTable = this.calculateTruthTable.bind(this);
+    this.getBasicOptions = this.getBasicOptions.bind(this);
 
   }
 
@@ -28,9 +32,21 @@ class PropositionalLogic extends Component {
   state = {
     value: "",
     inputValue: "",
-    variables: ["A", "B"],
-    options: ["∧", "∨", "-", "→", "⇔", "A", "B"],
+    variables: defaultVariables,
+    options: this.getBasicOptions(),
     selectedOperation: "∧"
+  }
+
+  getBasicOptions() {
+    //for simplicity we are just using the first element of each array, so to reduce complexity, but allow other ways to write it
+    let arr = [];
+    arr.push(andOperators[0]);
+    arr.push(orOperators[0]);
+    arr.push(notOperators[0]);
+    arr.push(thenOperators[0]);
+    arr.push(ifOnlyOperators[0]);
+    arr.push(...defaultVariables)
+    return arr;
   }
 
   setInputValue(evt) {
@@ -56,6 +72,9 @@ class PropositionalLogic extends Component {
     let variables = this.state.variables;
     let inputValue = this.state.inputValue;
     if (inputValue) {
+      if(this.state.options[inputValue]) {
+        return {error: "Ya existe una opcion con este nombre, y es de tipo " + this.state.variables[inputValue] ? "variable" : "operacion"};
+      }
       options.push(inputValue);
       variables.push(inputValue);
       inputValue = "";
@@ -78,39 +97,32 @@ class PropositionalLogic extends Component {
   }
 
   resolveOperation(bool1, bool2, operation) {
-    console.log("llega"), bool1, bool2, operation;
-    if (operation === "∧") {
+
+    if (andOperators.includes(operation)) {
       return bool1 && bool2;
     }
 
-    if (operation === "∨") {
+    if (orOperators.includes(operation)) {
       return bool1 || bool2;
     }
 
-    if (operation === "-") {
+    if (notOperators.includes(operation)) {
       return !bool1;
     }
 
-    if (operation === "→") {
+    if (thenOperators.includes(operation)) {
       return !bool1 || bool2;
     }
 
-    if (operation === "⇔") {
+    if (ifOnlyOperators.includes(operation)) {
       return (bool1 && bool2) || (!bool1 && !bool2);
     }
-    return {error: "Hey there was an error with this operation"}
-  }
-
-  resolveExpression(evt) {
-    console.log(1, this.resolve(this.state.value, {
-      "A": true, "B": true
-    }))
+    return {error: "This operation does not exists: " + operation}
   }
 
   resolve(value, variablesMap) {
     variablesMap[trueCode] = true;
     variablesMap[falseCode] = false;
-    let pila = [];
     let currentStack = [];
     let parenthesisStack = [];
     let lastChar = "";
@@ -119,7 +131,7 @@ class PropositionalLogic extends Component {
     for (const c of value) {
       if (c === " ") continue;
 
-      if (c === "(") {
+      if (c === "(" || c === "[") {
         if (lastChar && isVariable(lastChar)) {
           return {
             error: "The parenthesis should be used after an operation or at the beginning"
@@ -130,7 +142,7 @@ class PropositionalLogic extends Component {
         }
         parenthesisCounter++;
         continue;
-      } else if (c === ")") {
+      } else if (c === ")" || c === "]") {
         parenthesisCounter--;
         if (parenthesisCounter) {
           parenthesisStack.push(c);
@@ -148,16 +160,19 @@ class PropositionalLogic extends Component {
       } else if (parenthesisCounter) {
         parenthesisStack.push(c);
         continue;
-      } else if (lastChar === "-") {
+      } else if (notOperators.includes(lastChar)) {
         if (!isVariable(c))
           return {
             error: "The not operator should be used before an expression(between parenthesis) or a variable"
           };
 
         currentStack.push(c);
-        pila.push(currentStack);
-        currentStack = [];
-        lastChar = "";
+
+        let result = this.resolveOperation(variablesMap[currentStack[1]], false, currentStack[0]);
+
+        if (result !== true && result !== false) return result;
+        currentStack = [result ? trueCode : falseCode];
+        lastChar = result ? trueCode : falseCode;
         continue;
       } else if (isVariable(c)) {
         if (lastChar) {
@@ -166,10 +181,13 @@ class PropositionalLogic extends Component {
               error: "Cannot have variable after variable"
             };
           } else {
-            currentStack.push(c);
-            pila.push(currentStack);
-            currentStack = [];
-            lastChar = "";
+            let bool1 = variablesMap[currentStack[0]];
+            let bool2 = variablesMap[c];//current character been evaluated
+            let result = this.resolveOperation(bool1, bool2, currentStack[1])
+
+            if (result !== true && result !== false) return result;
+            currentStack = [result ? trueCode : falseCode];
+            lastChar = result ? trueCode : falseCode;
             continue;
           }
         } else {
@@ -180,7 +198,7 @@ class PropositionalLogic extends Component {
       } else {
         //operation
         if(!lastChar) {
-          if(c === "-") {
+          if(notOperators.includes(c)) {
             currentStack.push(c);
             lastChar = c;
             continue;
@@ -198,17 +216,18 @@ class PropositionalLogic extends Component {
         lastChar = c;
       }
     }
-    if(currentStack.length) {
-      pila.push(currentStack);
-      currentStack = [];
+    if(currentStack.length === 1) {
+      return currentStack[0] === trueCode ||
+      (currentStack[0] === falseCode ? false : {error: "returned a not boolean value: " + currentStack[0]});
     }
 
-    if(pila[0][0] === "-") {
-      return this.resolveOperation(variablesMap[pila[0][1]], false, "-");
+    if(notOperators.includes(currentStack[0])) {
+      return this.resolveOperation(variablesMap[currentStack[1]], false, currentStack[0]);
+    } else if(currentStack.length === 3) {
+      return this.resolveOperation(variablesMap[currentStack[0]], variablesMap[currentStack[2]], currentStack[1]);
     }
-    let bool1 = variablesMap[pila[0][0]];
-    let bool2 = variablesMap[pila[0][2]];
-    return this.resolveOperation(bool1, bool2, pila[0][1]);
+
+    return {error: "The currentStack has something else", currentStack}
     //after for
   }
 
@@ -216,9 +235,11 @@ class PropositionalLogic extends Component {
     let allCombinations = Math.pow(2, this.state.variables.length);
     for(var i = 0; i < allCombinations; i++) {
       let binaryString = i.toString(2);
+      let length = binaryString.length;
       let variablesMap = {};
       this.state.variables.forEach((variable, index) => {
-        variablesMap[variable] = binaryString[index] === "1";
+        let binaryPosition = length - 1 - index;
+        variablesMap[variable] = binaryString[binaryPosition] === "1";
       })
       console.log(this.resolve(this.state.value, variablesMap), variablesMap);
     }
@@ -232,18 +253,19 @@ class PropositionalLogic extends Component {
     < div>
       < h1> Propositional Logic < /h1>
       < input type="text" onChange={ this.setInputValue } value={ this.state.inputValue } />
-      < button onClick={ this.addOption }> Agregar Variable < /button>
-      < select onChange={ this.setSelectedOperation } value={ this.state.selectedOperation }>
-        {this.state.options.map((value, index) => {
-            return <option key={ value }>
-                      {value}
-                   < /option>
-                 })}
-      < /select>
-      < button onClick={ this.addOperation }> Agregar < /button>
-      < input type="text" onChange={ this.setValue } value={ this.state.value } />
+      < button onClick={ this.addOption }> Agregar Variable < /button><br/>
+
       < span value={ this.state.value }>
-      < button onClick={ this.calculateTruthTable }> Agregar < /button>
+      < input type="text" onChange={ this.setValue } value={ this.state.value } />
+      < select onChange={ this.setSelectedOperation } value={ this.state.selectedOperation }>
+      {this.state.options.map((value, index) => {
+        return <option key={ value }>
+        {value}
+        < /option>
+      })}
+      < /select>
+      < button onClick={ this.addOperation }> Agregar al final < /button><br/>
+      < button onClick={ this.calculateTruthTable }> Ejecutar < /button>
       < /span>
     < /div>
     )
