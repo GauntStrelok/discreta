@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM, {render} from "react-dom";
-import { Route, Link, BrowserRouter as Router } from 'react-router-dom'
+import { Route, Link, HashRouter as Router } from 'react-router-dom'
 //import MediaContainer from "./playlist/components/mediaContainer";
 //import data from "./json/cosas.json";
 import Home from "../pages/containers/home"
