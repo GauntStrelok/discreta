@@ -1,6 +1,7 @@
 import React, {
   Component
 } from "react";
+import './propositionalLogic.css'
 
 const trueCode = "T";
 const falseCode = "F";
@@ -34,7 +35,8 @@ class PropositionalLogic extends Component {
     inputValue: "",
     variables: defaultVariables,
     options: this.getBasicOptions(),
-    selectedOperation: "∧"
+    selectedOperation: andOperators[0],
+    truthyTable: []
   }
 
   getBasicOptions() {
@@ -153,7 +155,7 @@ class PropositionalLogic extends Component {
         //en todo esto hay que revisar cosas como que lo anterior no sea tambien una variable por ejemplo
         let result = this.resolve(parenthesisStack, variablesMap);
         parenthesisStack = [];
-        if (result !== true && result !== false) return result;
+        if (typeof result !== "boolean") return result;
         currentStack.push(result ? trueCode : falseCode);
         lastChar = result ? trueCode : falseCode;
         continue;
@@ -170,7 +172,7 @@ class PropositionalLogic extends Component {
 
         let result = this.resolveOperation(variablesMap[currentStack[1]], false, currentStack[0]);
 
-        if (result !== true && result !== false) return result;
+        if (typeof result !== "boolean") return result;
         currentStack = [result ? trueCode : falseCode];
         lastChar = result ? trueCode : falseCode;
         continue;
@@ -185,7 +187,7 @@ class PropositionalLogic extends Component {
             let bool2 = variablesMap[c];//current character been evaluated
             let result = this.resolveOperation(bool1, bool2, currentStack[1])
 
-            if (result !== true && result !== false) return result;
+            if (typeof result !== "boolean") return result;
             currentStack = [result ? trueCode : falseCode];
             lastChar = result ? trueCode : falseCode;
             continue;
@@ -233,21 +235,60 @@ class PropositionalLogic extends Component {
 
   calculateTruthTable() {
     let allCombinations = Math.pow(2, this.state.variables.length);
+    let resultTable = [];
     for(var i = 0; i < allCombinations; i++) {
       let binaryString = i.toString(2);
       let length = binaryString.length;
       let variablesMap = {};
+      let resultRow = [];
       this.state.variables.forEach((variable, index) => {
         let binaryPosition = length - 1 - index;
-        variablesMap[variable] = binaryString[binaryPosition] === "1";
-      })
-      console.log(this.resolve(this.state.value, variablesMap), variablesMap);
+        let bool = binaryString[binaryPosition] === "1";
+        variablesMap[variable] = bool;
+        resultRow.push(bool);
+      });
+      let resolve = this.resolve(this.state.value, variablesMap);
+      if (typeof resolve !== "boolean"){
+        this.setState({truthyTable: resolve});
+        return;
+      }
+      resultRow.push(resolve);
+      //console.log(this.resolve(this.state.value, variablesMap), variablesMap);
+      resultTable.push(resultRow)
     }
+    this.setState({truthyTable: resultTable, savedHeader: this.state.value});
   }
 
   render() {
     const styles = {
 
+    }
+    let table;
+    if(this.state.truthyTable.length) {
+      table =
+      <table>
+        <thead>
+          <tr>
+            {this.state.variables.map((x, i) => <th key={i}>{x}</th>)}
+            <th key="last">{this.state.savedHeader}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+          this.state.truthyTable.map((row, j) => {
+            return (
+              <tr key={j}>
+                {row.map((value, i) => <td key={i}>{value.toString()}</td>)}
+              </tr>
+            )
+          })
+          }
+        </tbody>
+      </table>
+    } else if(this.state.truthyTable.error) {
+      table = <span>{this.state.truthyTable.error}</span>
+    } else {
+      table = <span>Presione Ejecutar para ver el resultado en la tabla de verdad</span>
     }
     return (
     < div>
@@ -267,6 +308,9 @@ class PropositionalLogic extends Component {
       < button onClick={ this.addOperation }> Agregar al final < /button><br/>
       < button onClick={ this.calculateTruthTable }> Ejecutar < /button>
       < /span>
+      <div>
+        {table}
+      </div>
     < /div>
     )
   }
