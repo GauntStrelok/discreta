@@ -5,13 +5,18 @@ import './propositionalLogic.css'
 
 const trueCode = "T";
 const falseCode = "F";
-const defaultVariables = ["A", "B"]
 
 const andOperators = ["∧", "^"];
 const orOperators = ["∨"];
 const thenOperators = ["→"];
 const ifOnlyOperators = ["⇔"];
 const notOperators = ["-", "¬"];
+const openParenthesis = ["(", "["]
+const closeParenthesis = [")", "]"]
+
+const reservedKeyWords = [];
+reservedKeyWords.push(trueCode, falseCode, ...andOperators, ...orOperators, ...thenOperators, ...ifOnlyOperators, ...notOperators,
+                      ...openParenthesis, ...closeParenthesis );
 
 
 class PropositionalLogic extends Component {
@@ -26,6 +31,7 @@ class PropositionalLogic extends Component {
     this.resolve = this.resolve.bind(this);
     this.calculateTruthTable = this.calculateTruthTable.bind(this);
     this.getBasicOptions = this.getBasicOptions.bind(this);
+    this.executeOperation = this.executeOperation.bind(this);
 
   }
 
@@ -33,7 +39,6 @@ class PropositionalLogic extends Component {
   state = {
     value: "",
     inputValue: "",
-    variables: defaultVariables,
     options: this.getBasicOptions(),
     selectedOperation: andOperators[0],
     truthyTable: []
@@ -47,7 +52,6 @@ class PropositionalLogic extends Component {
     arr.push(notOperators[0]);
     arr.push(thenOperators[0]);
     arr.push(ifOnlyOperators[0]);
-    arr.push(...defaultVariables)
     return arr;
   }
 
@@ -81,10 +85,9 @@ class PropositionalLogic extends Component {
       variables.push(inputValue);
       inputValue = "";
     }
-    //options.push("new");
     this.setState({
       inputValue: inputValue,
-      variables: variables,
+      variables: [],
       options: options
     });
   }
@@ -247,7 +250,7 @@ class PropositionalLogic extends Component {
         variablesMap[variable] = bool;
         resultRow.push(bool);
       });
-      let resolve = this.resolve(this.state.value, variablesMap);
+      let resolve = this.resolve(this.state.arrayValue, variablesMap);
       if (typeof resolve !== "boolean"){
         this.setState({truthyTable: resolve});
         return;
@@ -257,6 +260,32 @@ class PropositionalLogic extends Component {
       resultTable.push(resultRow)
     }
     this.setState({truthyTable: resultTable, savedHeader: this.state.value});
+  }
+
+  executeOperation() {
+    RegExp.escape= function(s) {
+        return s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    };
+
+
+    let str = this.state.value;
+    let str2 = this.state.value;
+    reservedKeyWords.forEach((keyWord) => {
+      let regexp = (new RegExp( RegExp.escape(keyWord), 'g'));
+      str = str.replace(regexp, ' ');
+      str2 = str2.replace(regexp, (x) => {
+        return ` ${x} `;
+      });
+    });
+    str = str.replace(/\s\s+/g, ' ');
+    let variables = str.split(' ');//meterlo en un set para hacerlos unicos
+
+    str2 = str2.replace(/\s\s+/g, ' ');
+    let arrayValue = str2.split(' ');
+
+
+    this.setState({variables: variables, arrayValue: arrayValue});
+    this.calculateTruthTable();
   }
 
   render() {
@@ -293,8 +322,8 @@ class PropositionalLogic extends Component {
     return (
     < div>
       < h1> Propositional Logic < /h1>
-      < input type="text" onChange={ this.setInputValue } value={ this.state.inputValue } />
-      < button onClick={ this.addOption }> Agregar Variable < /button><br/>
+      {/*< input type="text" onChange={ this.setInputValue } value={ this.state.inputValue } />
+      < button onClick={ this.addOption }> Agregar Variable < /button><br/>*/}
 
       < span value={ this.state.value }>
       < input type="text" onChange={ this.setValue } value={ this.state.value } />
@@ -306,7 +335,7 @@ class PropositionalLogic extends Component {
       })}
       < /select>
       < button onClick={ this.addOperation }> Agregar al final < /button><br/>
-      < button onClick={ this.calculateTruthTable }> Ejecutar < /button>
+      < button onClick={ this.executeOperation }> Ejecutar < /button>
       < /span>
       <div>
         {table}
