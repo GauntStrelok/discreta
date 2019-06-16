@@ -45,16 +45,7 @@ module.exports = (env) => {
         },
         {
           test: /\.css$/,
-          use: ExtractTextPlugin.extract({
-            use: [
-              {
-                loader: 'css-loader',
-                options: {
-                  minimize: true,
-                }
-              }
-            ]
-          })
+          use: ['style-loader', 'css-loader']
         },
         {
           test: /\.(jpg|png|gif|svg)$/,

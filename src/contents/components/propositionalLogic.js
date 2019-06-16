@@ -134,7 +134,7 @@ class PropositionalLogic extends Component {
     let parenthesisCounter = 0;
     let isVariable = (c) => this.state.variables.includes(c) || c === trueCode || c === falseCode
     for (const c of value) {
-      if (c === " ") continue;
+      if (c === " " || c === "") continue;
 
       if (c === "(" || c === "[") {
         if (lastChar && isVariable(lastChar)) {
@@ -279,13 +279,16 @@ class PropositionalLogic extends Component {
     });
     str = str.replace(/\s\s+/g, ' ');
     let variables = str.split(' ');//meterlo en un set para hacerlos unicos
+    variables = variables.filter((el, i, ar) => {
+      if(el === "") return false
+      return ar.indexOf(el) === i;
+    });
 
     str2 = str2.replace(/\s\s+/g, ' ');
     let arrayValue = str2.split(' ');
 
 
-    this.setState({variables: variables, arrayValue: arrayValue});
-    this.calculateTruthTable();
+    this.setState({variables: variables, arrayValue: arrayValue}, this.calculateTruthTable);
   }
 
   render() {
